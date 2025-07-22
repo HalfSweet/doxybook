@@ -65,6 +65,7 @@ def run(
         common_args = {
             'files': doxygen.header_files.children,
             'groups': doxygen.groups.children,
+            'root': doxygen.root.children,  # Add extracted group members
             'file_template': env.get_template(f'{template_lang}/file.jinja'),
             'table_template': env.get_template('table.jinja'),
             'detail_template': env.get_template('detail.jinja'),

@@ -56,6 +56,9 @@ class Doxygen:
             elif kind == Kind.PAGE:
                 self.pages.add_child(node)
 
+        print('Extracting members from groups...')
+        self._extract_group_members()
+
         print('Deduplicating data... (may take a minute!)')
         for i, child in enumerate(self.root.children.copy()):
             self._fix_duplicates(child, self.root, [])
@@ -73,6 +76,36 @@ class Doxygen:
         self._recursive_sort(self.groups)
         self._recursive_sort(self.files)
         self._recursive_sort(self.pages)
+
+    def _extract_group_members(self):
+        """
+        Extract functions, macros, and other members from groups and add them to the root,
+        effectively flattening the group hierarchy and treating group members as regular items.
+        """
+        extracted_refids = set()  # Track already extracted members to avoid duplicates
+        
+        def extract_from_group(group_node: Node):
+            """Recursively extract members from a group and its subgroups"""
+            members_to_extract = []
+            
+            for child in group_node.children:
+                if child.kind == Kind.GROUP:
+                    # Recursively process subgroups
+                    extract_from_group(child)
+                elif child.kind.is_language() and child.refid not in extracted_refids:
+                    # This is a function, macro, variable, etc. - add it to extraction list
+                    members_to_extract.append(child)
+                    extracted_refids.add(child.refid)
+            
+            # Add extracted members to root
+            for member in members_to_extract:
+                # Update parent reference to point to root instead of group
+                member._parent = self.root
+                self.root.add_child(member)
+        
+        # Process all groups
+        for group in self.groups.children:
+            extract_from_group(group)
 
     def _fix_parents(self, node: Node):
         if node.is_dir or node.is_root:
@@ -99,7 +132,7 @@ class Doxygen:
                 root.children.pop(i)
                 return
 
-    def _fix_duplicates(self, node: Node, root: Node, filter: [Kind]):
+    def _fix_duplicates(self, node: Node, root: Node, filter: list[Kind]):
         for child in node.children:
             if len(filter) > 0 and child.kind not in filter:
                 continue

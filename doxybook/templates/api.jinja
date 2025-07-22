@@ -5,6 +5,31 @@
 {% for file in files -%}
 - [{{file.location}}]({{file.relative_link}})
 {% endfor %}
+
+{%- set root_macros = [] -%}
+{%- set root_functions = [] -%}
+{%- set root_types = [] -%}
+{%- for item in root -%}
+  {%- if item.kind.name == 'DEFINE' -%}
+    {%- set _ = root_macros.append(item) -%}
+  {%- elif item.kind.name == 'FUNCTION' -%}
+    {%- set _ = root_functions.append(item) -%}
+  {%- elif item.kind.name in ['STRUCT', 'TYPEDEF', 'ENUM', 'UNION'] -%}
+    {%- set _ = root_types.append(item) -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- if root_functions or root_macros or root_types %}
+## Functions and Macros from Groups
+
+{{ table_template.render(title='Functions', nodes=root_functions) }}
+{{ table_template.render(title='Macros', nodes=root_macros) }}
+{{ table_template.render(title='Types', nodes=root_types) }}
+{{ detail_template.render(title='Functions Documentation', nodes=root_functions) }}
+{{ detail_template.render(title='Macros Documentation', nodes=root_macros) }}
+{{ detail_template.render(title='Types Documentation', nodes=root_types) }}
+{%- endif %}
+
 {% for file in files -%}
 {{
 file_template.render(
