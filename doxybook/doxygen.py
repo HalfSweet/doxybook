@@ -79,10 +79,22 @@ class Doxygen:
 
     def _extract_group_members(self):
         """
-        Extract functions, macros, and other members from groups and add them to the root,
+        Extract functions, macros, and other members from groups and add them to their respective files,
         effectively flattening the group hierarchy and treating group members as regular items.
         """
         extracted_refids = set()  # Track already extracted members to avoid duplicates
+        
+        def find_file_for_member(member: Node) -> Node:
+            """Find the appropriate file node for a member based on its location"""
+            member_location = member.location
+            if not member_location:
+                return None
+                
+            # Search through all files to find the one that matches the member's location
+            for file_node in self.files.children:
+                if file_node.is_file and file_node.location == member_location:
+                    return file_node
+            return None
         
         def extract_from_group(group_node: Node):
             """Recursively extract members from a group and its subgroups"""
@@ -97,11 +109,17 @@ class Doxygen:
                     members_to_extract.append(child)
                     extracted_refids.add(child.refid)
             
-            # Add extracted members to root
+            # Add extracted members to their respective files
             for member in members_to_extract:
-                # Update parent reference to point to root instead of group
-                member._parent = self.root
-                self.root.add_child(member)
+                target_file = find_file_for_member(member)
+                if target_file:
+                    # Update parent reference to point to the file instead of group
+                    member._parent = target_file
+                    target_file.add_child(member)
+                else:
+                    # If no file found, add to root as fallback
+                    member._parent = self.root
+                    self.root.add_child(member)
         
         # Process all groups
         for group in self.groups.children:
