@@ -17,6 +17,7 @@ from doxybook.xml_parser import (
     XmlParser,
 )
 
+import typing as t
 
 class Doxygen:
     def __init__(self, index_path: str, parser: XmlParser, cache: Cache, options: dict = {}):
@@ -150,7 +151,7 @@ class Doxygen:
                 root.children.pop(i)
                 return
 
-    def _fix_duplicates(self, node: Node, root: Node, filter: list[Kind]):
+    def _fix_duplicates(self, node: Node, root: Node, filter: t.List[Kind]):
         for child in node.children:
             if len(filter) > 0 and child.kind not in filter:
                 continue
